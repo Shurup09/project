@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Уход за комнатными растениями</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{{ 'dark-theme' if session.theme == 'dark' else '' }}">
+    <div class="container">
+        <!-- Навигация -->
+        <div class="nav">
+            <a href="/" class="logo">HealthyPlant</a>
+            <div class="nav-buttons">
+                {% if session.user_id %}
+                    <span class="nav-username">Привет, {{ session.username }}!</span>
+                    <a href="{{ url_for('my_account') }}" class="button button-outline">👤 Мой аккаунт</a>
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        {% if session.theme == 'dark' %}☀️{% else %}🌙{% endif %}
+                    </button>
+                    <button class="button button-outline" onclick="logout()">Выйти</button>
+                {% else %}
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        {% if session.theme == 'dark' %}☀️{% else %}🌙{% endif %}
+                    </button>
+                    <button class="button button-outline" onclick="openModal('loginModal')">Войти</button>
+                    <button class="button" onclick="openModal('registerModal')">Регистрация</button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if request.endpoint == 'my_account' %}
+            <!-- Страница аккаунта -->
+            <div class="section">
+                <h1>👤 Личный кабинет</h1>
+                <div class="account-section">
+                    <div class="account-sidebar">
+                        <h3>Меню</h3>
+                        <ul class="sidebar-menu">
+                            <li><a href="#profile" class="active" onclick="showSection('profile')">📊 Профиль</a></li>
+                            <li><a href="#my-flowers" onclick="showSection('my-flowers')">🌺 Мои цветы</a></li>
+                            <li><a href="#settings" onclick="showSection('settings')">⚙️ Настройки</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="account-content">
+                        <!-- Профиль -->
+                        <div id="profile-section" class="account-section-content">
+                            <h2>📊 Статистика профиля</h2>
+                            <div class="user-info">
+                                <h3>{{ session.username }}</h3>
+                                <p>Email: {{ session.email }}</p>
+                                <div class="user-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-number">{{ user_data.analysis_count if user_data else 0 }}</div>
+                                        <div>Анализов</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">{{ user_data.flowers|length if user_data and user_data.flowers else 0 }}</div>
+                                        <div>Цветков</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">{{ user_data.created_at[:10] if user_data and user_data.created_at else '' }}</div>
+                                        <div>Дата регистрации</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Мои цветы -->
+                        <div id="my-flowers-section" class="account-section-content" style="display: none;">
+                            <h2>🌺 Мои цветы</h2>
+                            {% if user_flowers %}
+                            <div class="my-flowers-grid">
+                                {% for flower in user_flowers %}
+                                <div class="flower-card">
+                                    {% if get_flower_image_url %}
+                                        {% set flower_image = get_flower_image_url(flower.image_filename) %}
+                                        {% if flower_image %}
+                                        <img src="{{ flower_image }}" alt="{{ flower.name }}">
+                                        {% endif %}
+                                    {% endif %}
+                                    <h3>{{ flower.name }}</h3>
+                                    <p><strong>Тип:</strong> {{ flower.type }}</p>
+                                    <p><strong>Дата анализа:</strong> {{ flower.analysis_date[:10] }}</p>
+                                    <div class="care-details">
+                                        <h4>Уход:</h4>
+                                        <p><strong>Полив:</strong> {{ flower.care.watering }}</p>
+                                        <p><strong>Освещение:</strong> {{ flower.care.light }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p>У вас пока нет проанализированных цветков.</p>
+                            <a href="/" class="button">🔍 Проанализировать первый цветок</a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Настройки -->
+                        <div id="settings-section" class="account-section-content" style="display: none;">
+                            <h2>⚙️ Настройки</h2>
+                            <div class="form-group">
+                                <label class="form-label">Тема оформления</label>
+                                <div>
+                                    <button class="button {{ 'button-outline' if session.theme != 'light' else '' }}" onclick="changeTheme('light')">☀️ Светлая</button>
+                                    <button class="button {{ 'button-outline' if session.theme != 'dark' else '' }}" onclick="changeTheme('dark')">🌙 Тёмная</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Главная страница -->
+            <div class="hero section">
+                <h1>🌿 Уход за комнатными растениями</h1>
+                <p class="hero-description">Правильный уход за цветами включает регулярный полив, подкормку и любовь к растениям.</p>
+
+                {% if session.user_id %}
+                <div class="user-info">
+                    <h3>👋 Добро пожаловать, {{ session.username }}!</h3>
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ user_data.analysis_count if user_data else 0 }}</div>
+                            <div>Анализов</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ user_data.flowers|length if user_data and user_data.flowers else 0 }}</div>
+                            <div>Цветков</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <a href="#upload" class="button">🔍 Определить цветок по фото</a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if session.user_id %}
+            <div class="section" id="upload">
+                <h2>📷 Загрузите фото цветка</h2>
+                <p>Загрузите фотографию вашего комнатного растения, и мы определим его тип и дадим рекомендации по уходу.</p>
+
+                <form method="POST" enctype="multipart/form-data" class="upload-section">
+                    <input type="file" name="flower_image" id="flowerImage" accept="image/*" style="display: none;" onchange="previewImage()">
+                    <label for="flowerImage" class="button">
+                        📁 Выбрать фотографию
+                    </label>
+                    <div id="imagePreview" class="image-preview"></div>
+                    <button type="submit" class="button analyze-button">🔍 Анализировать цветок</button>
+                </form>
+            </div>
+
+            {% if flower_data %}
+            <div class="flower-result section" id="flowerResult">
+                <h2>🌺 Результат анализа</h2>
+                <div class="flower-info">
+                    <div class="flower-image-container">
+                        {% if flower_image %}
+                        <img src="{{ flower_image }}" alt="{{ flower_data.name }}" class="flower-image">
+                        {% endif %}
+                    </div>
+                    <div class="flower-details">
+                        <h3>{{ flower_data.name }}</h3>
+                        <p><strong>Тип:</strong> {{ flower_data.type }}</p>
+                        <p><strong>Описание:</strong> {{ flower_data.description }}</p>
+
+                        <div class="care-details">
+                            <h4>💧 Уход за растением:</h4>
+                            <ul>
+                                <li><strong>Полив:</strong> {{ flower_data.care.watering }}</li>
+                                <li><strong>Освещение:</strong> {{ flower_data.care.light }}</li>
+                                <li><strong>Температура:</strong> {{ flower_data.care.temperature }}</li>
+                                <li><strong>Влажность:</strong> {{ flower_data.care.humidity }}</li>
+                                <li><strong>Удобрение:</strong> {{ flower_data.care.fertilizer }}</li>
+                            </ul>
+                        </div>
+
+                        <div class="problem-list">
+                            <h4>⚠️ Возможные проблемы:</h4>
+                            <ul>
+                                {% for problem in flower_data.problems %}
+                                <li>{{ problem }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="section auth-required-section">
+                <h2>🔐 Требуется авторизация</h2>
+                <p>Для анализа цветков необходимо войти в систему или зарегистрироваться.</p>
+                <div class="auth-buttons">
+                    <button class="button" onclick="openModal('registerModal')">Зарегистрироваться</button>
+                    <button class="button button-outline" onclick="openModal('loginModal')">Войти</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="section">
+                <h2>📝 Советы по уходу за растениями</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">💧</div>
+                        <h3>Полив</h3>
+                        <p>Регулярно проверяйте влажность почвы. Не допускайте пересыхания или переувлажнения.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">☀️</div>
+                        <h3>Освещение</h3>
+                        <p>Обеспечьте растениям достаточно света согласно их потребностям.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌡️</div>
+                        <h3>Температура</h3>
+                        <p>Следите за температурным режимом, избегайте резких перепадов.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🍃</div>
+                        <h3>Гигиена</h3>
+                        <p>Регулярно удаляйте пыль с листьев и проверяйте на наличие вредителей.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="contact">
+                <h2>📞 Связаться</h2>
+                <p>📧 Email: healthyplant7@gmail.com</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Модальное окно регистрации -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <h2>📝 Регистрация</h2>
+            <form method="POST" action="{{ url_for('register') }}">
+                <div class="form-group">
+                    <label class="form-label">Имя пользователя</label>
+                    <input type="text" name="username" class="form-input" required placeholder="Введите ваше имя">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-input" required placeholder="Введите ваш email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" name="password" class="form-input" required placeholder="Создайте пароль">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Подтверждение пароля</label>
+                    <input type="password" name="confirm_password" class="form-input" required placeholder="Повторите пароль">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Тема оформления</label>
+                    <select name="theme" class="form-input">
+                        <option value="light">☀️ Светлая</option>
+                        <option value="dark">🌙 Тёмная</option>
+                    </select>
+                </div>
+                <button type="submit" class="button modal-submit-btn">Зарегистрироваться</button>
+            </form>
+            <p class="modal-footer">
+                Уже есть аккаунт? <a href="#" onclick="closeModal('registerModal'); openModal('loginModal');">Войдите</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Модальное окно входа -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>🔑 Вход в систему</h2>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-input" required placeholder="Введите ваш email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" name="password" class="form-input" required placeholder="Введите ваш пароль">
+                </div>
+                <button type="submit" class="button modal-submit-btn">Войти</button>
+            </form>
+            <p class="modal-footer">
+                Нет аккаунта? <a href="#" onclick="closeModal('loginModal'); openModal('registerModal');">Зарегистрируйтесь</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
